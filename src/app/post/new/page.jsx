@@ -1,7 +1,7 @@
+'use client';
 import React from 'react';
+import { withPageAuthRequired } from '@auth0/nextjs-auth0/client';
 
-const NewPost = () => {
-  return <div>NewPost</div>;
-};
-
-export default NewPost;
+export default withPageAuthRequired(function NewPost() {
+  return <div>New Post</div>;
+});

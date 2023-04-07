@@ -1,7 +1,6 @@
 import React from 'react';
+import { withPageAuthRequired } from '@auth0/nextjs-auth0/client';
 
-const Post = () => {
-  return <div>Post</div>;
-};
-
-export default Post;
+export default withPageAuthRequired(function PostPage() {
+  return <div>PostPage</div>;
+});
