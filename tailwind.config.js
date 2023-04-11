@@ -10,6 +10,10 @@ module.exports = {
   ],
   theme: {
     extend: {},
+    fontFamily: {
+      title: ['var(--font-inconsolata)'],
+      content: ['var(--font-ibm-plex-mono)'],
+    },
   },
   plugins: [],
 };
