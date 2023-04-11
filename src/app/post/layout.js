@@ -75,7 +75,7 @@ export default function PostLayout({ children }) {
                 )}
               </div>
             </div>
-            <div className='bg-green-500'>{children}</div>
+            <div className=''>{children}</div>
           </div>
         </Providers>
       </body>
