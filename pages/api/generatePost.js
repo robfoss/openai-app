@@ -6,12 +6,101 @@ export default async function generatePost(req, res) {
   });
   const openai = new OpenAIApi(config);
 
-  const response = await openai.createCompletion({
-    model: 'text-davinci-003',
-    prompt: 'Generate a blog post about rap music.',
+  const { topic, keywords } = req.body;
+
+  //   const response = await openai.createCompletion({
+  //     model: 'text-davinci-003',
+  //     prompt: `Write a long and detailed SEO-optimized blog post about ${topic}, that targets the following comma separated keywords: ${keywords}. The content should be formatted in SEO-friendly HTML. The response must also include appropriate HTML title and meta description. The return format must be stringified JSON in the following format: {
+  //         "postContent": post content here,
+  //         "title": title here,
+  //         "metaDescription": meta description here,
+  //     }`,
+  //     temperature: 0,
+  //     max_tokens: 3600,
+  //   });
+
+  const postContentResponse = await openai.createChatCompletion({
+    model: 'gpt-3.5-turbo',
     temperature: 0,
-    max_tokens: 3600,
+    messages: [
+      {
+        role: 'system',
+        content: 'You are blog post generator',
+      },
+      {
+        role: 'user',
+        content: `Write a long and detailed SEO-optimized blog post about ${topic}, that targets the following comma separated keywords: ${keywords}. The content should be formatted in SEO-friendly HTML,
+        limited to the following HTML tags: p, h1, h2, h3, h4 h5, strong, li, ol, ul, i.`,
+      },
+    ],
   });
-  console.log('response: ', response);
-  res.status(200).json({ post: response.data.choices });
+
+  const postContent =
+    postContentResponse.data.choices[0]?.message?.content || '';
+
+  const titleResponse = await openai.createChatCompletion({
+    model: 'gpt-3.5-turbo',
+    temperature: 0,
+    messages: [
+      {
+        role: 'system',
+        content: 'You are blog post generator',
+      },
+      {
+        role: 'user',
+        content: `Write a long and detailed SEO-optimized blog post about ${topic}, that targets the following comma separated keywords: ${keywords}. The content should be formatted in SEO-friendly HTML,
+            limited to the following HTML tags: p, h1, h2, h3, h4 h5, strong, li, ol, ul, i.`,
+      },
+      {
+        role: 'assistant',
+        content: postContent,
+      },
+      {
+        role: 'user',
+        content:
+          'Generate an appropriate title tag text for the above blog post.',
+      },
+    ],
+  });
+
+  const metaDescriptionResponse = await openai.createChatCompletion({
+    model: 'gpt-3.5-turbo',
+    temperature: 0,
+    messages: [
+      {
+        role: 'system',
+        content: 'You are blog post generator',
+      },
+      {
+        role: 'user',
+        content: `Write a long and detailed SEO-optimized blog post about ${topic}, that targets the following comma separated keywords: ${keywords}. The content should be formatted in SEO-friendly HTML,
+            limited to the following HTML tags: p, h1, h2, h3, h4 h5, strong, li, ol, ul, i.`,
+      },
+      {
+        role: 'assistant',
+        content: postContent,
+      },
+      {
+        role: 'user',
+        content:
+          'Generate SEO-friendly meta description content for the above blog post',
+      },
+    ],
+  });
+
+  const title = titleResponse.data.choices[0]?.message?.content || '';
+  const metaDescription =
+    metaDescriptionResponse.data.choices[0]?.message?.content || '';
+
+  console.log('Post Content: ', postContent);
+  console.log('title response: ', title);
+  console.log('meta response: ', metaDescription);
+
+  res.status(200).json({
+    post: {
+      postContent,
+      title,
+      metaDescription,
+    },
+  });
 }
