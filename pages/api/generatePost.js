@@ -1,6 +1,21 @@
 import { Configuration, OpenAIApi } from 'openai';
+import { withApiAuthRequired } from '@auth0/nextjs-auth0';
+import { getSession } from '@auth0/nextjs-auth0';
+import clientPromise from '@/lib/mongodb';
 
-export default async function generatePost(req, res) {
+export default withApiAuthRequired(async function generatePost(req, res) {
+  const { user } = await getSession(req, res);
+  const client = await clientPromise;
+  const db = client.db('AiBlog');
+  const userProfile = await db.collection('users').findOne({
+    auth0Id: user.sub,
+  });
+
+  if (!userProfile?.availableTokens) {
+    res.status(403);
+    return;
+  }
+
   const config = new Configuration({
     apiKey: process.env.OPENAI_API_KEY,
   });
@@ -92,9 +107,26 @@ export default async function generatePost(req, res) {
   const metaDescription =
     metaDescriptionResponse.data.choices[0]?.message?.content || '';
 
-  console.log('Post Content: ', postContent);
-  console.log('title response: ', title);
-  console.log('meta response: ', metaDescription);
+  await db.collection('users').updateOne(
+    {
+      auth0Id: user.sub,
+    },
+    {
+      $inc: {
+        availableTokens: -1,
+      },
+    }
+  );
+
+  const post = await db.collection('posts').insertOne({
+    postContent,
+    title,
+    metaDescription,
+    keywords,
+    topic,
+    userId: userProfile._id,
+    created: new Date(),
+  });
 
   res.status(200).json({
     post: {
@@ -103,4 +135,4 @@ export default async function generatePost(req, res) {
       metaDescription,
     },
   });
-}
+});
